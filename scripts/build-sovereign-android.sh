@@ -1,20 +1,16 @@
 #!/bin/bash
 set -e
 
-echo "🚀 بدء عملية بناء الأندرويد..."
+echo "🚀 بدء عملية بناء الأندرويد من مجلد التطبيق..."
 
-# التحقق من مكان وجود ملفات بناء أندرويد وتوجيه Gradle إليها
-if [ -d "android/app" ]; then
-    cd android
-    if [ -f "gradlew" ]; then
-        chmod +x gradlew
-        ./gradlew assembleDebug
-    else
-        gradle assembleDebug
-    fi
+# الانتقال المباشر لمجلد أندرويد الفرعي حيث توجد ملفات البناء الحقيقية
+cd android/app
+
+# التحقق من وجود ملفات البناء أو إنشاء التوافقية وتشغيل بناء الـ Debug
+if [ -f "../gradlew" ]; then
+    ../gradlew assembleDebug
 else
-    echo "⚠️ مجلد الأندرويد غير مكتمل، جارٍ البحث..."
-    exit 1
+    gradle assembleDebug
 fi
 
-echo "✅ تم البناء بنجاح!"
+echo "✅ تم البناء بنجاح وتوليد ملف APK!"
