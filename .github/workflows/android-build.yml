@@ -24,31 +24,25 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Gradle Wrapper and Build
+      - name: Find Android Project and Build
         run: |
-          # البحث عن مكان ملف build.gradle لمعرفة المجلد الصحيح
-          if [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
-            gradle wrapper
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          elif [ -f "android/build.gradle" ] || [ -f "android/build.gradle.kts" ]; then
-            cd android
-            gradle wrapper
-            chmod +x gradlew
-            ./gradlew assembleDebug
+          # البحث عن المجلد الذي يحتوي على تطبيق أندرويد حقيقي (يحتوي على plugin تطبيق أندرويد)
+          ANDROID_DIR=$(grep -rl "com.android.application" . --exclude-dir=.git --exclude-dir=.github | head -n 1 | xargs dirname)
+          
+          if [ -n "$ANDROID_DIR" ] && [ "$ANDROID_DIR" != "." ]; then
+            echo "Found Android module in: $ANDROID_DIR"
+            cd "$ANDROID_DIR"
           else
-            echo "Searching for build.gradle anywhere..."
-            BUILD_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1 | xargs dirname)
-            if [ -n "$BUILD_DIR" ]; then
-              cd "$BUILD_DIR"
-              gradle wrapper
-              chmod +x gradlew
-              ./gradlew assembleDebug
-            else
-              echo "Error: No build.gradle found!"
-              exit 1
-            fi
+            echo "Checking if root is the android project..."
           fi
+
+          # التأكد من وجود gradlew أو توليده
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper
+          fi
+          
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
