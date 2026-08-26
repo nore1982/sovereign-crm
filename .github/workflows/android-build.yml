@@ -22,8 +22,29 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build APK using Android SDK Build-Tools
+      - name: Build Android App
         run: |
-          cd android
-          # استخدام أداة البناء الافتراضية المضمنة في بيئة الأندرويد الرسمية
-          ./gradlew assembleDebug || gradle assembleDebug --warning-mode all
+          # البحث عن ملف build.gradle الخاص بالأندرويد والدخول للمجلد الذي يحتويه تلقائياً
+          APP_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep -v "build/" | head -n 1 | xargs dirname)
+          echo "📁 مسار المشروع المحدد هو: $APP_DIR"
+          cd "$APP_DIR"
+          
+          # التحقق من وجود ملف build
+          if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
+            echo "❌ ملف البناء غير موجود!"
+            exit 1
+          fi
+
+          # إذا لم يكن هناك ملف gradlew، سنقوم بإنشاء wrapper أساسي
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper --gradle-version 8.5
+          fi
+          
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sovereign-CRM-APK
+          path: '**/build/outputs/apk/debug/*.apk'
