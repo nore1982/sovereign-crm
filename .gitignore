@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production Build
+dist/
+build/
+
+# Gradle & Android Build Outputs
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+# Keystore (حماية مفتاح التوقيع إن وجد محلياً)
+*.keystore
+*.jks
+
+# IDE & OS Files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

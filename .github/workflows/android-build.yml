@@ -494,4 +494,8 @@ jobs:
       - name: 📊 Release Build Summary
         run: |
           echo "✅ Signed Release APK built successfully!"
+<<<<<<< HEAD
           ls -lh android/app/build/outputs/apk/release/
+=======
+          ls -lh android/app/build/outputs/apk/release/
+>>>>>>> 387794787c6d62104c36e2e1942f1e46b650fdf6
