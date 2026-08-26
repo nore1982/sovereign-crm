@@ -22,14 +22,42 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build with Gradle
+      - name: Fix and Generate Gradle Environment
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          # الانتقال إلى المجلد الذي يحتوي على مجلد android أو app
+          if [ -d "android" ]; then
+            cd android
+          elif [ -d "android/app" ]; then
+            cd android
+          else
+            # إنشاء هيكل مجلد أندرويد قياسي إذا كان المجلد مفقوداً
+            mkdir -p android/app
+            cp -r * android/app/ 2>/dev/null || true
+            cd android
+          fi
 
-      - name: Upload APK
+          # إذا لم يكن هناك settings.gradle، نقوم بإنشائه لكي يقبل البناء
+          if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
+            echo "include ':app'" > settings.gradle
+          fi
+
+          # توليد أدوات Gradle Wrapper الناقصة بشكل تلقائي
+          gradle wrapper --gradle-version 8.5
+          
+          chmod +x gradlew
+
+      - name: Build Debug APK with Gradle
+        run: |
+          if [ -d "android" ]; then
+            cd android
+            ./gradlew assembleDebug
+          else
+            cd android/app
+            ../gradlew assembleDebug
+          fi
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sovereign-CRM-APK
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: '**/build/outputs/apk/debug/*.apk'
