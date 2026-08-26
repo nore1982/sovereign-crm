@@ -24,18 +24,30 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Find and Build with Gradle
+      - name: Generate Gradle Wrapper and Build
         run: |
-          if [ -f "./gradlew" ]; then
+          # البحث عن مكان ملف build.gradle لمعرفة المجلد الصحيح
+          if [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
+            gradle wrapper
             chmod +x gradlew
             ./gradlew assembleDebug
-          elif [ -f "android/gradlew" ]; then
+          elif [ -f "android/build.gradle" ] || [ -f "android/build.gradle.kts" ]; then
             cd android
+            gradle wrapper
             chmod +x gradlew
             ./gradlew assembleDebug
           else
-            echo "Gradlew not found in root or android folder!"
-            exit 1
+            echo "Searching for build.gradle anywhere..."
+            BUILD_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1 | xargs dirname)
+            if [ -n "$BUILD_DIR" ]; then
+              cd "$BUILD_DIR"
+              gradle wrapper
+              chmod +x gradlew
+              ./gradlew assembleDebug
+            else
+              echo "Error: No build.gradle found!"
+              exit 1
+            fi
           fi
 
       - name: Upload APK Artifact
@@ -43,6 +55,5 @@ jobs:
         with:
           name: app-debug
           path: |
-            app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/debug/*.apk
+            **/build/outputs/apk/debug/*.apk
         continue-on-error: true
