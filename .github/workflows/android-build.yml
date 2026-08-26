@@ -2,62 +2,45 @@ name: 🏛️ Sovereign CRM — Android Build
 
 on:
   push:
-    branches: [main, master, develop]
-  pull_request:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'نوع البناء'
-        required: true
-        default: 'debug'
-        type: choice
-        options: [debug, release]
 
 env:
   NODE_VERSION: '18'
   JAVA_VERSION: '11'
 
 jobs:
-  build-debug:
+  build:
     name: 🧪 Build Debug APK
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.build_type == 'debug'
 
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: 📦 Install & Build
+      - name: 📦 Install Dependencies & Sync
         run: |
-          npm ci
-          npm install @capacitor/android --save
-          npm run build:prod
+          npm install
+          npx cap sync android
 
-      - name: 📱 Sync Android
-        run: npx cap sync android
-
-      - name: ⚙️ Set API 33
-        run: |
-          sed -i 's/compileSdk [0-9]*/compileSdk 33/g' android/app/build.gradle || true
-          sed -i 's/targetSdk [0-9]*/targetSdk 33/g' android/app/build.gradle || true
-
-      - name: 🔨 Build Debug
+      - name: 🔨 Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
 
-      - name: 📤 Upload Debug APK
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SovereignCRM-Debug-${{ github.run_number }}
+          name: Sovereign-CRM-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
