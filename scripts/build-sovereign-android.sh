@@ -9,7 +9,7 @@ echo -e "${GOLD}║${NC}  👑  ${CYAN}مسار السيادية — Android 13 
 echo -e "${GOLD}╚═══════════════════════════════════════════════════════════════╝${NC}\n"
 
 echo -e "${BLUE}▶${NC} ${YELLOW}تثبيت الحزم...${NC}"
-npm ci
+npm install
 npm install @capacitor/android @capacitor/splash-screen @capacitor/status-bar @capacitor/keyboard --save
 
 echo -e "${BLUE}▶${NC} ${YELLOW}بناء Production...${NC}"
