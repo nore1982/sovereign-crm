@@ -1,46 +1,34 @@
-name: 🏛️ Sovereign CRM — Android Build
+name: Android Build
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
-
-env:
-  NODE_VERSION: '18'
-  JAVA_VERSION: '11'
 
 jobs:
   build:
-    name: 🧪 Build Debug APK
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
-          
+
       - uses: actions/setup-java@v4
         with:
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
 
-      - name: 📦 Install Dependencies & Sync
-        run: |
-          npm install
-          npx cap sync android
+      - name: Grant execute permission for build script
+        run: chmod +x scripts/build-sovereign-android.sh
 
-      - name: 🔨 Build Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon
+      - name: Run Android Build Script
+        run: ./scripts/build-sovereign-android.sh debug
 
-      - name: 📤 Upload APK Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sovereign-CRM-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
+          path: builds/*.apk
