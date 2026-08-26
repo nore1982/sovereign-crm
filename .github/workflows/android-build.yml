@@ -22,27 +22,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Find and Build with Gradle
+      - name: Build with Gradle
         run: |
-          # البحث التلقائي عن المجلد الذي يحتوي على ملف بناء أندرويد والدخول إليه
-          ANDROID_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep android | head -n 1 | xargs dirname)
-          if [ -z "$ANDROID_DIR" ]; then
-            echo "❌ لم يتم العثور على مجلد أندرويد!"
-            exit 1
-          fi
-          echo "📁 تم العثور على مجلد الأندرويد في: $ANDROID_DIR"
-          cd "$ANDROID_DIR"
-          
-          # التأكد من وجود gradlew أو إنشاؤه
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.5
-          fi
-          
+          cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Sovereign-CRM-APK
-          path: **/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/debug/*.apk
