@@ -1,15 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "🔨 بدء بناء ملف الـ APK بواسطة Gradle مباشرة..."
+echo "🚀 تجهيز بيئة البناء..."
 
-# الانتقال إلى مجلد أندرويد
+# الانتقال لمجلد أندرويد
 cd android
 
-# إعطاء صلاحية التنفيذ لملف الـ gradlew
-chmod +x gradlew
+# التأكد من وجود ملف gradlew أو إنشائه عبر gradle إن لم يكن موجوداً
+if [ ! -f "gradlew" ]; then
+    echo "إنشاء ملفات التشغيل..."
+    gradle wrapper
+fi
 
-# بناء نسخة الـ Debug APK
+chmod +x gradlew
 ./gradlew assembleDebug
 
-echo "✅ تم بناء ملف الـ APK بنجاح!"
+echo "✅ تمت عملية البناء بنجاح!"
