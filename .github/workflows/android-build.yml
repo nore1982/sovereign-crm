@@ -24,44 +24,44 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Perfect Build Android Project
+      - name: Ultimate Stable Android Build
         run: |
-          echo "=== Cleaning and preparing project structure ==="
+          echo "=== Cleaning workspace ==="
           rm -rf android app build settings.gradle build.gradle gradle.properties
 
           mkdir -p app/src/main/java/com/sovereign/crm
           mkdir -p app/src/main/res/values
 
-          # 1. إعداد settings.gradle بالشكل الحديث الصحيح (وهو المكان الوحيد للمستودعات)
+          # 1. ملف settings.gradle البسيط والنظيف
           cat << 'EOF' > settings.gradle
-          pluginManagement {
+          rootProject.name = "SovereignCRM"
+          include ':app'
+          EOF
+
+          # 2. ملف build.gradle الرئيسي (مع تعريف كافة المستودعات المطلوبة للأندرويد)
+          cat << 'EOF' > build.gradle
+          buildscript {
               repositories {
                   google()
                   mavenCentral()
                   gradlePluginPortal()
               }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.1'
+              }
           }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+
+          allprojects {
               repositories {
                   google()
                   mavenCentral()
               }
           }
-          rootProject.name = "SovereignCRM"
-          include ':app'
           EOF
 
-          # 2. ملف build.gradle الرئيسي (خالي تماماً من المستودعات المتعارضة)
-          cat << 'EOF' > build.gradle
-          // Root build file
-          EOF
-
-          # 3. ملف build.gradle الخاص بالتطبيق
+          # 3. ملف build.gradle الخاص بالتطبيق (بالصيغة الكلاسيكية المضمونة)
           cat << 'EOF' > app/build.gradle
-          plugins {
-              id 'com.android.application'
-          }
+          apply plugin: 'com.android.application'
 
           android {
               namespace 'com.sovereign.crm'
@@ -106,7 +106,7 @@ jobs:
           }
           EOF
 
-          echo "=== Running Gradle Build ==="
+          echo "=== Running Gradle Wrapper & Build ==="
           gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug
