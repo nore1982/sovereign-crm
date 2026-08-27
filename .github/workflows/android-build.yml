@@ -1,4 +1,4 @@
-name: 🏛️ Sovereign CRM — Android Build (Bulletproof)
+name: 🤖 Sovereign CRM — Pure Android Build
 
 on:
   push:
@@ -6,393 +6,44 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'نوع البناء'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
 
 env:
-  NODE_VERSION: '18'
   JAVA_VERSION: '17'
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════
-  # 🧪 Job 1: بناء Debug APK
-  # ═══════════════════════════════════════════════════════════════
-  build-debug:
-    name: 🧪 Build Debug APK
+  build-android:
+    name: 🚀 Build Android APK
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event.inputs.build_type == 'debug' || github.ref != 'refs/heads/main'
 
     steps:
-      # ─────────── Checkout ───────────
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # ─────────── 🔍 اكتشاف لا يفشل أبداً ───────────
-      - name: 🔍 Discover Project Directory (Bulletproof)
-        id: discover
-        run: |
-          echo "═══════════════════════════════════════════════════════"
-          echo "🔍 Starting BULLETPROOF project discovery..."
-
-          # ─── الاستراتيجية 1: التحقق من الجذر أولاً ───
-          if [ -f "./package.json" ]; then
-            PROJECT_DIR="."
-            echo "✅ STRATEGY 1: package.json found in ROOT directory"
-          
-          # ─── الاستراتيجية 2: بحث شامل في كل المستودع (بدون قيود عمق) ───
-          else
-            echo "🔎 STRATEGY 2: Searching entire repository (no depth limit)..."
-            
-            # بحث شامل — بدون maxdepth — يستبعد node_modules و المجلدات المخفية
-            FOUND=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -n 1)
-            
-            if [ -n "$FOUND" ] && [ -f "$FOUND" ]; then
-              PROJECT_DIR=$(dirname "$FOUND")
-              PROJECT_DIR="${PROJECT_DIR#./}"  # إزالة ./ من البداية
-              echo "✅ STRATEGY 2: package.json found at: $FOUND"
-              echo "📁 Project directory: $PROJECT_DIR"
-            
-            # ─── الاستراتيجية 3: افتراض الجذر + تحذير (لا يفشل أبداً) ───
-            else
-              PROJECT_DIR="."
-              echo "⚠️  STRATEGY 3: package.json NOT FOUND anywhere in repo!"
-              echo "⚠️  Defaulting to ROOT directory (.) and continuing..."
-              echo ""
-              echo "📁 DEBUG — Repository root listing:"
-              ls -la || echo "Cannot list root"
-              echo ""
-              echo "📁 DEBUG — All directories in repo:"
-              find . -type d -not -path "*/node_modules/*" -not -path "*/.*" -not -path "." | head -30 || echo "Cannot list directories"
-              echo ""
-              echo "📁 DEBUG — Searching for ANY json files:"
-              find . -name "*.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -20 || echo "No json files found"
-            fi
-          fi
-
-          # ─── التحقق النهائي (للتسجيل فقط — لا يفشل أبداً) ───
-          if [ ! -f "$PROJECT_DIR/package.json" ]; then
-            echo "⚠️  FINAL CHECK: package.json not found in '$PROJECT_DIR' — will likely fail at npm install, but continuing..."
-          else
-            echo "✅ FINAL CHECK: package.json confirmed at $PROJECT_DIR/package.json"
-          fi
-
-          echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
-          echo "═══════════════════════════════════════════════════════"
-
-      # ─────────── Debug: عرض المجلد المختار ───────────
-      - name: 🐞 Debug Selected Directory
-        run: |
-          PROJECT_DIR="${{ steps.discover.outputs.project_dir }}"
-          echo "📌 Selected project directory: '$PROJECT_DIR'"
-          echo "📁 Listing contents of '$PROJECT_DIR':"
-          ls -la "$PROJECT_DIR" || echo "❌ Cannot list directory"
-          echo ""
-          if [ -f "$PROJECT_DIR/package.json" ]; then
-            echo "✅ package.json exists"
-            echo "📄 First 10 lines of package.json:"
-            head -10 "$PROJECT_DIR/package.json"
-          else
-            echo "❌ package.json does NOT exist in '$PROJECT_DIR'"
-          fi
-
-      # ─────────── Setup Node.js (بدون cache lock) ───────────
-      - name: ⚡ Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # ─────────── Install npm Dependencies ───────────
-      - name: 📦 Install npm Dependencies
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          echo "🔧 Working in: $(pwd)"
-          
-          if [ ! -f "package.json" ]; then
-            echo "❌ CRITICAL: package.json not found in $(pwd)"
-            echo "📁 Current directory contents:"
-            ls -la
-            exit 1
-          fi
-          
-          npm install --no-audit --no-fund --prefer-offline || {
-            echo "⚠️  Retrying with --legacy-peer-deps..."
-            npm install --legacy-peer-deps --no-audit --no-fund || {
-              echo "⚠️  Retrying with --force..."
-              npm install --force --no-audit --no-fund
-            }
-          }
-          
-          echo "✅ npm install completed"
-
-      # ─────────── Install Capacitor ───────────
-      - name: 📦 Install Capacitor & Plugins
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          npm install @capacitor/core@5.7.0 @capacitor/cli@5.7.0 @capacitor/android@5.7.0 --save-exact --no-audit --no-fund || {
-            npm install @capacitor/core @capacitor/cli @capacitor/android --save --no-audit --no-fund
-          }
-          npm install @capacitor/splash-screen @capacitor/status-bar @capacitor/keyboard --save --no-audit --no-fund
-
-      # ─────────── Setup JDK 17 ───────────
       - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
+          cache: 'gradle'
 
-      # ─────────── Setup Android SDK ───────────
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           log-accepted-android-sdk-licenses: true
 
-      # ─────────── Build Frontend ───────────
-      - name: 🏗️ Build Production Frontend
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          npm run build:prod || npx vite build --mode production
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://sovereign-crm-api.up.railway.app' }}
-          VITE_SOCKET_URL: ${{ secrets.VITE_SOCKET_URL || 'https://sovereign-crm-api.up.railway.app' }}
-
-      # ─────────── Generate Android via Capacitor ───────────
-      - name: 📱 Generate Android Project
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          if [ ! -d "android" ]; then
-            echo "⚠️  Android folder missing. Running npx cap add android..."
-            npx cap add android || {
-              echo "❌ npx cap add android failed"
-              exit 1
-            }
-          fi
-          
-          echo "🔄 Syncing Capacitor..."
-          npx cap sync android || {
-            echo "❌ npx cap sync android failed"
-            exit 1
-          }
-          
-          echo "🔍 Verifying Android project files..."
-          [ -f "android/build.gradle" ] || (echo "❌ Missing root build.gradle" && exit 1)
-          [ -f "android/settings.gradle" ] || (echo "❌ Missing settings.gradle" && exit 1)
-          [ -f "android/gradlew" ] || (echo "❌ Missing gradlew" && exit 1)
-          echo "✅ Android project verified"
-
-      # ─────────── Fix Gradle & AGP ───────────
-      - name: ⚙️ Fix Gradle & AGP Versions
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          mkdir -p android/gradle/wrapper
-          cat > android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0.2-bin.zip
-          networkTimeout=10000
-          validateDistributionUrl=true
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-          
-          sed -i 's/com.android.tools.build:gradle:[0-9.]*/com.android.tools.build:gradle:8.1.0/g' android/build.gradle
-          sed -i 's/compileSdk [0-9]*/compileSdk 33/g' android/app/build.gradle 2>/dev/null || true
-          sed -i 's/targetSdk [0-9]*/targetSdk 33/g' android/app/build.gradle 2>/dev/null || true
-          echo "✅ Gradle & AGP fixed"
-
-      # ─────────── Fix Permissions ───────────
       - name: 🔧 Fix gradlew Permissions
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: chmod +x android/gradlew
+        run: chmod +x android/gradlew || chmod +x gradlew || true
 
-      # ─────────── Build Debug APK ───────────
       - name: 🔨 Build Debug APK
-        working-directory: ${{ steps.discover.outputs.project_dir }}
         run: |
-          cd android
+          if [ -d "android" ]; then
+            cd android
+          fi
           ./gradlew assembleDebug --no-daemon --stacktrace
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME }}
 
-      # ─────────── Upload Artifact ───────────
       - name: 📤 Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: SovereignCRM-Debug-${{ github.run_number }}
-          path: ${{ steps.discover.outputs.project_dir }}/android/app/build/outputs/apk/debug/app-debug.apk
+          name: SovereignCRM-Android-Debug
+          path: '**/build/outputs/apk/debug/*.apk'
           retention-days: 7
-
-      # ─────────── Final Summary ───────────
-      - name: 📊 Final Summary
-        if: always()
-        run: |
-          PROJECT_DIR="${{ steps.discover.outputs.project_dir }}"
-          echo "═══════════════════════════════════════════════════════"
-          echo "📌 Project directory used: $PROJECT_DIR"
-          if [ -f "$PROJECT_DIR/android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "✅ SUCCESS: Debug APK built!"
-            ls -lh "$PROJECT_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
-          else
-            echo "❌ FAILED: APK not found"
-            find "$PROJECT_DIR/android/app/build" -type f 2>/dev/null || true
-          fi
-          echo "═══════════════════════════════════════════════════════"
-
-  # ═══════════════════════════════════════════════════════════════
-  # 🔐 Job 2: بناء Release APK موقّع (بنفس الاكتشاف الآمن)
-  # ═══════════════════════════════════════════════════════════════
-  build-release:
-    name: 🔐 Build Signed Release APK
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' || github.event.inputs.build_type == 'release'
-
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
-      # ─────────── 🔍 نفس الاكتشاف الآمن تماماً ───────────
-      - name: 🔍 Discover Project Directory (Bulletproof)
-        id: discover
-        run: |
-          echo "═══════════════════════════════════════════════════════"
-          echo "🔍 Starting BULLETPROOF project discovery..."
-
-          if [ -f "./package.json" ]; then
-            PROJECT_DIR="."
-            echo "✅ STRATEGY 1: package.json found in ROOT"
-          else
-            echo "🔎 STRATEGY 2: Searching entire repository..."
-            FOUND=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -n 1)
-            
-            if [ -n "$FOUND" ] && [ -f "$FOUND" ]; then
-              PROJECT_DIR=$(dirname "$FOUND")
-              PROJECT_DIR="${PROJECT_DIR#./}"
-              echo "✅ STRATEGY 2: Found at: $PROJECT_DIR"
-            else
-              PROJECT_DIR="."
-              echo "⚠️  STRATEGY 3: Not found anywhere! Defaulting to ROOT."
-              echo "📁 DEBUG — All directories:"
-              find . -type d -not -path "*/node_modules/*" -not -path "*/.*" -not -path "." | head -30 || true
-            fi
-          fi
-
-          if [ ! -f "$PROJECT_DIR/package.json" ]; then
-            echo "⚠️  WARNING: package.json not in '$PROJECT_DIR' — continuing anyway..."
-          else
-            echo "✅ Confirmed: $PROJECT_DIR/package.json"
-          fi
-
-          echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
-          echo "═══════════════════════════════════════════════════════"
-
-      - name: ⚡ Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Install Dependencies
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          if [ ! -f "package.json" ]; then
-            echo "❌ package.json missing in $(pwd)"
-            ls -la
-            exit 1
-          fi
-          npm install --no-audit --no-fund || npm install --legacy-peer-deps --no-audit --no-fund
-          npm install @capacitor/core@5.7.0 @capacitor/cli@5.7.0 @capacitor/android@5.7.0 --save-exact --no-audit --no-fund
-          npm install @capacitor/splash-screen @capacitor/status-bar @capacitor/keyboard --save --no-audit --no-fund
-
-      - name: ☕ Setup JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-
-      - name: 🤖 Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          log-accepted-android-sdk-licenses: true
-
-      - name: 🏗️ Build Frontend
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: npm run build:prod || npx vite build --mode production
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://sovereign-crm-api.up.railway.app' }}
-          VITE_SOCKET_URL: ${{ secrets.VITE_SOCKET_URL || 'https://sovereign-crm-api.up.railway.app' }}
-
-      - name: 📱 Generate Android Project
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-          npx cap sync android
-          [ -f "android/build.gradle" ] || (echo "❌ Missing root build.gradle" && exit 1)
-          [ -f "android/settings.gradle" ] || (echo "❌ Missing settings.gradle" && exit 1)
-          [ -f "android/gradlew" ] || (echo "❌ Missing gradlew" && exit 1)
-
-      - name: ⚙️ Fix Gradle & AGP
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          mkdir -p android/gradle/wrapper
-          cat > android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0.2-bin.zip
-          networkTimeout=10000
-          validateDistributionUrl=true
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-          sed -i 's/com.android.tools.build:gradle:[0-9.]*/com.android.tools.build:gradle:8.1.0/g' android/build.gradle
-          sed -i 's/compileSdk [0-9]*/compileSdk 33/g' android/app/build.gradle 2>/dev/null || true
-          sed -i 's/targetSdk [0-9]*/targetSdk 33/g' android/app/build.gradle 2>/dev/null || true
-
-      - name: 🔧 Fix Permissions
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: chmod +x android/gradlew
-
-      - name: 🔐 Setup Keystore
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          if [ -n "${{ secrets.SOVEREIGN_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.SOVEREIGN_KEYSTORE_BASE64 }}" | base64 -d > sovereign-crm.keystore
-          else
-            keytool -genkey -v -keystore sovereign-crm.keystore -alias sovereign -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sovereign,OU=Dev,O=Sovereign,L=Riyadh,C=SA" -storepass "sovereign2026" -keypass "sovereign2026"
-          fi
-
-      - name: 🔨 Build Signed Release APK
-        working-directory: ${{ steps.discover.outputs.project_dir }}
-        run: |
-          cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace
-        env:
-          SOVEREIGN_KEYSTORE_PASSWORD: ${{ secrets.SOVEREIGN_KEYSTORE_PASSWORD || 'sovereign2026' }}
-          JAVA_HOME: ${{ env.JAVA_HOME }}
-
-      - name: 📤 Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SovereignCRM-Release-v1.0.0-${{ github.run_number }}
-          path: ${{ steps.discover.outputs.project_dir }}/android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 30
-
-      - name: 📊 Release Summary
-        if: always()
-        run: |
-          PROJECT_DIR="${{ steps.discover.outputs.project_dir }}"
-          if [ -f "$PROJECT_DIR/android/app/build/outputs/apk/release/app-release.apk" ]; then
-            echo "✅ SUCCESS: Release APK built!"
-            ls -lh "$PROJECT_DIR/android/app/build/outputs/apk/release/app-release.apk"
-          else
-            echo "❌ FAILED"
-            find "$PROJECT_DIR/android/app/build" -type f 2>/dev/null || true
-          fi
