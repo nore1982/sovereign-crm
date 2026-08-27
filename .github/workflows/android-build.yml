@@ -24,15 +24,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Final Production Android Build
+      - name: Simple Direct Android Build
         run: |
-          echo "=== Cleaning workspace ==="
+          echo "=== Setting up minimal Android project structure ==="
           rm -rf android app build settings.gradle build.gradle gradle.properties
 
           mkdir -p app/src/main/java/com/sovereign/crm
           mkdir -p app/src/main/res/values
 
-          # 1. settings.gradle بإصدارات متوافقة تماماً
+          # 1. إعداد settings.gradle
           cat << 'EOF' > settings.gradle
           pluginManagement {
               repositories {
@@ -52,20 +52,14 @@ jobs:
           include ':app'
           EOF
 
-          # 2. build.gradle الرئيسي مع أحدث بلجن مستقر
+          # 2. إعداد build.gradle الرئيسي
           cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.0'
-              }
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
           }
           EOF
 
-          # 3. build.gradle الخاص بالتطبيق
+          # 3. إعداد app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -85,12 +79,10 @@ jobs:
           }
           EOF
 
-          # 4. ملف Manifest والنشاط الأساسي
+          # 4. ملفات المصدر الأساسية
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application
-                  android:label="Sovereign CRM"
-                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+              <application android:label="Sovereign CRM">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true">
@@ -103,7 +95,7 @@ jobs:
           </manifest>
           EOF
 
-          cat << 'EOF' > app/src/main/java/com/sovereign/crm/MainActivity.kt
+          cat << 'EOF' > app/src/main/java/com/sovereign.crm/MainActivity.kt
           package com.sovereign.crm
           import android.os.Bundle
           import androidx.appcompat.app.AppCompatActivity
@@ -113,11 +105,15 @@ jobs:
               }
           }
           EOF
+          # تصحيح مسار الملف بناءً على الحزمة
+          mkdir -p app/src/main/java/com/sovereign/crm
+          mv app/src/main/java/com/sovereign.crm/MainActivity.kt app/src/main/java/com/sovereign/crm/
+          rm -rf app/src/main/java/com/sovereign.crm
 
-          echo "=== Running Gradle Build with Stacktrace ==="
-          gradle wrapper --gradle-version 8.5
+          echo "=== Initializing Gradle and Building APK ==="
+          gradle wrapper --gradle-version 8.0
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
