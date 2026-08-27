@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Direct Gradle Build
+name: 🤖 Sovereign CRM — Android Build
 
 on:
   push:
@@ -18,22 +18,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🔨 Build APK using Gradle Direct
+      - name: 🔨 Build APK in Android Directory
         run: |
-          # البحث عن مكان ملف build.gradle وتنفيذ البناء مباشرة
-          if [ -f "build.gradle" ]; then
-            gradle assembleDebug --no-daemon
-          elif [ -f "android/build.gradle" ]; then
-            cd android
-            gradle assembleDebug --no-daemon
-          else
-            echo "❌ لم يتم العثور على ملف البناء الرئيسي"
-            exit 1
-          fi
+          cd android
+          chmod +x gradlew || true
+          ./gradlew assembleDebug --no-daemon
 
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SovereignCRM-APK
-          path: '**/build/outputs/apk/debug/*.apk'
+          path: android/build/outputs/apk/debug/*.apk
           retention-days: 7
