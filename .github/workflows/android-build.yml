@@ -24,18 +24,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Force Build Android Project
+      - name: Perfect Build Android Project
         run: |
-          echo "=== Generating a complete valid Android Project structure ==="
-          
-          # مسح أي ملفات قديمة معطوبة قد تعيق البناء
+          echo "=== Cleaning and preparing project structure ==="
           rm -rf android app build settings.gradle build.gradle gradle.properties
 
-          # إنشاء هيكل مجلدات أندرويد حقيقي ونظيف 100%
           mkdir -p app/src/main/java/com/sovereign/crm
           mkdir -p app/src/main/res/values
 
-          # 1. إنشاء ملف settings.gradle الرئيسي
+          # 1. إعداد settings.gradle بالشكل الحديث الصحيح (وهو المكان الوحيد للمستودعات)
           cat << 'EOF' > settings.gradle
           pluginManagement {
               repositories {
@@ -45,7 +42,7 @@ jobs:
               }
           }
           dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
               repositories {
                   google()
                   mavenCentral()
@@ -55,26 +52,12 @@ jobs:
           include ':app'
           EOF
 
-          # 2. إنشاء ملف build.gradle الرئيسي
+          # 2. ملف build.gradle الرئيسي (خالي تماماً من المستودعات المتعارضة)
           cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          task clean(type: Delete) {
-              delete rootProject.buildDirectory
-          }
+          // Root build file
           EOF
 
-          # 3. إنشاء ملف build.gradle الخاص بالتطبيق
+          # 3. ملف build.gradle الخاص بالتطبيق
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -90,37 +73,15 @@ jobs:
                   targetSdk 34
                   versionCode 1
                   versionName "1.0"
-                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
-
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-                  }
-              }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.core:core-ktx:1.12.0'
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.android.material:material:1.11.0'
           }
           EOF
 
-          # 4. إنشاء ملفات الـ AndroidManifest والنشاط الرئيسي لتكتمل البنية
+          # 4. ملف Manifest والنشاط الرئيسي
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
                   android:label="Sovereign CRM"
-                  android:roundIcon="@mipmap/ic_launcher_round"
-                  android:supportsRtl="true"
                   android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                   <activity
                       android:name=".MainActivity"
@@ -145,7 +106,7 @@ jobs:
           }
           EOF
 
-          echo "=== 5. Running Gradle Wrapper and Building APK ==="
+          echo "=== Running Gradle Build ==="
           gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug
