@@ -24,23 +24,40 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Fix and Build Android App
+      - name: Ultimate Gradle Setup and Build
         run: |
-          # الانتقال المباشر لمجلد أندرويد الأساسي
-          if [ -d "android" ]; then
-            cd android
-          elif [ -d "app" ]; then
-            cd ..
+          echo "=== 1. Checking repository structure ==="
+          ls -la
+
+          # البحث عن ملف settings.gradle أو build.gradle الحقيقي في المستودع بالكامل
+          SETTINGS_FILE=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | grep -v "\.git" | head -n 1)
+          
+          if [ -n "$SETTINGS_FILE" ]; then
+            PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+            echo "Found Gradle project at: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+          else
+            echo "No Gradle settings file found. Searching for build.gradle..."
+            BUILD_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" | grep -v "\.git" | head -n 1)
+            if [ -n "$BUILD_FILE" ]; then
+              PROJECT_DIR=$(dirname "$BUILD_FILE")
+              echo "Found build.gradle at: $PROJECT_DIR"
+              cd "$PROJECT_DIR"
+            else
+              echo "Error: This repository does not contain any Android Gradle project files!"
+              exit 1
+            fi
           fi
 
-          # التحقق من وجود gradlew وتوليده إذا لمש يكن موجوداً
+          echo "=== 2. Preparing Gradle Wrapper ==="
           if [ ! -f "gradlew" ]; then
+            echo "Generating gradle wrapper..."
             gradle wrapper
           fi
-          
+
           chmod +x gradlew
 
-          # بناء التطبيق مع تجاوز أي مشاكل ناقصة في الإضافات مؤقتاً لتوليد الـ APK
+          echo "=== 3. Building APK ==="
           ./gradlew assembleDebug || ./gradlew build -x test
 
       - name: Upload APK Artifact
@@ -49,6 +66,4 @@ jobs:
           name: app-debug
           path: |
             **/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/debug/*.apk
         continue-on-error: true
