@@ -95,7 +95,8 @@ jobs:
           </manifest>
           EOF
 
-          cat << 'EOF' > app/src/main/java/com/sovereign.crm/MainActivity.kt
+          # كتابة ملف MainActivity مباشرة في مساره الصحيحة بدون الحاجة للنقل
+          cat << 'EOF' > app/src/main/java/com/sovereign/crm/MainActivity.kt
           package com.sovereign.crm
           import android.os.Bundle
           import androidx.appcompat.app.AppCompatActivity
@@ -105,10 +106,6 @@ jobs:
               }
           }
           EOF
-          # تصحيح مسار الملف بناءً على الحزمة
-          mkdir -p app/src/main/java/com/sovereign/crm
-          mv app/src/main/java/com/sovereign.crm/MainActivity.kt app/src/main/java/com/sovereign/crm/
-          rm -rf app/src/main/java/com/sovereign.crm
 
           echo "=== Initializing Gradle and Building APK ==="
           gradle wrapper --gradle-version 8.0
