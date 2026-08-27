@@ -1,4 +1,4 @@
-name: 🏛️ Sovereign CRM — Android Build (Robust Discovery)
+name: 🏛️ Sovereign CRM — Android Build (Bulletproof)
 
 on:
   push:
@@ -19,10 +19,11 @@ on:
 env:
   NODE_VERSION: '18'
   JAVA_VERSION: '17'
-  # ─── اتركه فارغاً للاكتشاف التلقائي، أو اكتب اسم المجلد (مثال: frontend) ───
-  MANUAL_PROJECT_DIR: ''
 
 jobs:
+  # ═══════════════════════════════════════════════════════════════
+  # 🧪 Job 1: بناء Debug APK
+  # ═══════════════════════════════════════════════════════════════
   build-debug:
     name: 🧪 Build Debug APK
     runs-on: ubuntu-latest
@@ -35,63 +36,55 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ─────────── 🔍 اكتشاف آمن لمجلد المشروع ───────────
-      - name: 🔍 Discover Project Directory (Fail-Safe)
+      # ─────────── 🔍 اكتشاف لا يفشل أبداً ───────────
+      - name: 🔍 Discover Project Directory (Bulletproof)
         id: discover
         run: |
           echo "═══════════════════════════════════════════════════════"
-          echo "🔍 Starting project discovery..."
+          echo "🔍 Starting BULLETPROOF project discovery..."
 
-          # ─── الخيار 1: مسار يدوي (إذا حددته في env) ───
-          if [ -n "${{ env.MANUAL_PROJECT_DIR }}" ]; then
-            echo "📌 Using MANUAL_PROJECT_DIR: ${{ env.MANUAL_PROJECT_DIR }}"
-            PROJECT_DIR="${{ env.MANUAL_PROJECT_DIR }}"
-            
-            if [ ! -f "$PROJECT_DIR/package.json" ]; then
-              echo "❌ Manual directory specified but package.json NOT FOUND in: $PROJECT_DIR"
-              exit 1
-            fi
-            
-            echo "✅ Manual path verified: $PROJECT_DIR"
-            echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
-            echo "═══════════════════════════════════════════════════════"
-            exit 0
-          fi
-
-          # ─── الخيار 2: اكتشاف تلقائي آمن ───
-          echo "🔎 Searching for package.json (max depth: 3)..."
-          
-          # البحث مع حفظ النتيجة في متغير
-          FOUND_FILE=$(find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" -print -quit)
-          
-          echo "📄 Found: $FOUND_FILE"
-          
-          if [ -n "$FOUND_FILE" ] && [ -f "$FOUND_FILE" ]; then
-            # استخراج المجلد بأمان (بدون xargs)
-            PROJECT_DIR=$(dirname "$FOUND_FILE")
-            # إزالة ./ من البداية إن وُجد
-            PROJECT_DIR="${PROJECT_DIR#./}"
-            
-            echo "✅ Auto-discovered project directory: $PROJECT_DIR"
-            echo "📁 Full path: $(pwd)/$PROJECT_DIR"
-          else
-            echo "⚠️  No package.json found via search. Defaulting to ROOT (.)"
+          # ─── الاستراتيجية 1: التحقق من الجذر أولاً ───
+          if [ -f "./package.json" ]; then
             PROJECT_DIR="."
-            echo "✅ Defaulting to root directory"
+            echo "✅ STRATEGY 1: package.json found in ROOT directory"
+          
+          # ─── الاستراتيجية 2: بحث شامل في كل المستودع (بدون قيود عمق) ───
+          else
+            echo "🔎 STRATEGY 2: Searching entire repository (no depth limit)..."
+            
+            # بحث شامل — بدون maxdepth — يستبعد node_modules و المجلدات المخفية
+            FOUND=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -n 1)
+            
+            if [ -n "$FOUND" ] && [ -f "$FOUND" ]; then
+              PROJECT_DIR=$(dirname "$FOUND")
+              PROJECT_DIR="${PROJECT_DIR#./}"  # إزالة ./ من البداية
+              echo "✅ STRATEGY 2: package.json found at: $FOUND"
+              echo "📁 Project directory: $PROJECT_DIR"
+            
+            # ─── الاستراتيجية 3: افتراض الجذر + تحذير (لا يفشل أبداً) ───
+            else
+              PROJECT_DIR="."
+              echo "⚠️  STRATEGY 3: package.json NOT FOUND anywhere in repo!"
+              echo "⚠️  Defaulting to ROOT directory (.) and continuing..."
+              echo ""
+              echo "📁 DEBUG — Repository root listing:"
+              ls -la || echo "Cannot list root"
+              echo ""
+              echo "📁 DEBUG — All directories in repo:"
+              find . -type d -not -path "*/node_modules/*" -not -path "*/.*" -not -path "." | head -30 || echo "Cannot list directories"
+              echo ""
+              echo "📁 DEBUG — Searching for ANY json files:"
+              find . -name "*.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -20 || echo "No json files found"
+            fi
           fi
 
-          # ─── التحقق النهائي ───
+          # ─── التحقق النهائي (للتسجيل فقط — لا يفشل أبداً) ───
           if [ ! -f "$PROJECT_DIR/package.json" ]; then
-            echo "❌ FATAL: package.json still not found in: $PROJECT_DIR"
-            echo "📁 Listing repository root:"
-            ls -la
-            echo ""
-            echo "📁 Listing all subdirectories (level 1):"
-            find . -maxdepth 1 -type d
-            exit 1
+            echo "⚠️  FINAL CHECK: package.json not found in '$PROJECT_DIR' — will likely fail at npm install, but continuing..."
+          else
+            echo "✅ FINAL CHECK: package.json confirmed at $PROJECT_DIR/package.json"
           fi
 
-          echo "✅ package.json verified at: $PROJECT_DIR/package.json"
           echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
           echo "═══════════════════════════════════════════════════════"
 
@@ -99,11 +92,17 @@ jobs:
       - name: 🐞 Debug Selected Directory
         run: |
           PROJECT_DIR="${{ steps.discover.outputs.project_dir }}"
-          echo "📌 Selected project directory: $PROJECT_DIR"
-          echo "📁 Contents:"
-          ls -la "$PROJECT_DIR"
+          echo "📌 Selected project directory: '$PROJECT_DIR'"
+          echo "📁 Listing contents of '$PROJECT_DIR':"
+          ls -la "$PROJECT_DIR" || echo "❌ Cannot list directory"
           echo ""
-          echo "📄 package.json exists: $(test -f $PROJECT_DIR/package.json && echo 'YES' || echo 'NO')"
+          if [ -f "$PROJECT_DIR/package.json" ]; then
+            echo "✅ package.json exists"
+            echo "📄 First 10 lines of package.json:"
+            head -10 "$PROJECT_DIR/package.json"
+          else
+            echo "❌ package.json does NOT exist in '$PROJECT_DIR'"
+          fi
 
       # ─────────── Setup Node.js (بدون cache lock) ───────────
       - name: ⚡ Setup Node.js ${{ env.NODE_VERSION }}
@@ -111,14 +110,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # ─────────── Install npm Dependencies (آمن) ───────────
+      # ─────────── Install npm Dependencies ───────────
       - name: 📦 Install npm Dependencies
         working-directory: ${{ steps.discover.outputs.project_dir }}
         run: |
-          echo "🔧 Installing in: $(pwd)"
+          echo "🔧 Working in: $(pwd)"
           
           if [ ! -f "package.json" ]; then
-            echo "❌ package.json missing in $(pwd)"
+            echo "❌ CRITICAL: package.json not found in $(pwd)"
+            echo "📁 Current directory contents:"
+            ls -la
             exit 1
           fi
           
@@ -130,7 +131,7 @@ jobs:
             }
           }
           
-          echo "✅ npm install done"
+          echo "✅ npm install completed"
 
       # ─────────── Install Capacitor ───────────
       - name: 📦 Install Capacitor & Plugins
@@ -168,10 +169,20 @@ jobs:
         working-directory: ${{ steps.discover.outputs.project_dir }}
         run: |
           if [ ! -d "android" ]; then
-            npx cap add android
+            echo "⚠️  Android folder missing. Running npx cap add android..."
+            npx cap add android || {
+              echo "❌ npx cap add android failed"
+              exit 1
+            }
           fi
-          npx cap sync android
           
+          echo "🔄 Syncing Capacitor..."
+          npx cap sync android || {
+            echo "❌ npx cap sync android failed"
+            exit 1
+          }
+          
+          echo "🔍 Verifying Android project files..."
           [ -f "android/build.gradle" ] || (echo "❌ Missing root build.gradle" && exit 1)
           [ -f "android/settings.gradle" ] || (echo "❌ Missing settings.gradle" && exit 1)
           [ -f "android/gradlew" ] || (echo "❌ Missing gradlew" && exit 1)
@@ -195,6 +206,7 @@ jobs:
           sed -i 's/com.android.tools.build:gradle:[0-9.]*/com.android.tools.build:gradle:8.1.0/g' android/build.gradle
           sed -i 's/compileSdk [0-9]*/compileSdk 33/g' android/app/build.gradle 2>/dev/null || true
           sed -i 's/targetSdk [0-9]*/targetSdk 33/g' android/app/build.gradle 2>/dev/null || true
+          echo "✅ Gradle & AGP fixed"
 
       # ─────────── Fix Permissions ───────────
       - name: 🔧 Fix gradlew Permissions
@@ -235,7 +247,7 @@ jobs:
           echo "═══════════════════════════════════════════════════════"
 
   # ═══════════════════════════════════════════════════════════════
-  # 🔐 Job 2: بناء Release APK موقّع
+  # 🔐 Job 2: بناء Release APK موقّع (بنفس الاكتشاف الآمن)
   # ═══════════════════════════════════════════════════════════════
   build-release:
     name: 🔐 Build Signed Release APK
@@ -246,30 +258,40 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔍 Discover Project Directory (Fail-Safe)
+      # ─────────── 🔍 نفس الاكتشاف الآمن تماماً ───────────
+      - name: 🔍 Discover Project Directory (Bulletproof)
         id: discover
         run: |
-          if [ -n "${{ env.MANUAL_PROJECT_DIR }}" ]; then
-            echo "project_dir=${{ env.MANUAL_PROJECT_DIR }}" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          FOUND_FILE=$(find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" -print -quit)
-          
-          if [ -n "$FOUND_FILE" ] && [ -f "$FOUND_FILE" ]; then
-            PROJECT_DIR=$(dirname "$FOUND_FILE")
-            PROJECT_DIR="${PROJECT_DIR#./}"
-          else
+          echo "═══════════════════════════════════════════════════════"
+          echo "🔍 Starting BULLETPROOF project discovery..."
+
+          if [ -f "./package.json" ]; then
             PROJECT_DIR="."
+            echo "✅ STRATEGY 1: package.json found in ROOT"
+          else
+            echo "🔎 STRATEGY 2: Searching entire repository..."
+            FOUND=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.*" | head -n 1)
+            
+            if [ -n "$FOUND" ] && [ -f "$FOUND" ]; then
+              PROJECT_DIR=$(dirname "$FOUND")
+              PROJECT_DIR="${PROJECT_DIR#./}"
+              echo "✅ STRATEGY 2: Found at: $PROJECT_DIR"
+            else
+              PROJECT_DIR="."
+              echo "⚠️  STRATEGY 3: Not found anywhere! Defaulting to ROOT."
+              echo "📁 DEBUG — All directories:"
+              find . -type d -not -path "*/node_modules/*" -not -path "*/.*" -not -path "." | head -30 || true
+            fi
           fi
-          
+
           if [ ! -f "$PROJECT_DIR/package.json" ]; then
-            echo "❌ package.json not found"
-            exit 1
+            echo "⚠️  WARNING: package.json not in '$PROJECT_DIR' — continuing anyway..."
+          else
+            echo "✅ Confirmed: $PROJECT_DIR/package.json"
           fi
-          
-          echo "✅ Project directory: $PROJECT_DIR"
+
           echo "project_dir=$PROJECT_DIR" >> $GITHUB_OUTPUT
+          echo "═══════════════════════════════════════════════════════"
 
       - name: ⚡ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -279,6 +301,11 @@ jobs:
       - name: 📦 Install Dependencies
         working-directory: ${{ steps.discover.outputs.project_dir }}
         run: |
+          if [ ! -f "package.json" ]; then
+            echo "❌ package.json missing in $(pwd)"
+            ls -la
+            exit 1
+          fi
           npm install --no-audit --no-fund || npm install --legacy-peer-deps --no-audit --no-fund
           npm install @capacitor/core@5.7.0 @capacitor/cli@5.7.0 @capacitor/android@5.7.0 --save-exact --no-audit --no-fund
           npm install @capacitor/splash-screen @capacitor/status-bar @capacitor/keyboard --save --no-audit --no-fund
