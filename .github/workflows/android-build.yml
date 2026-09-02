@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Android Build
+name: 🤖 Sovereign CRM — Auto-Find & Build
 
 on:
   push:
@@ -18,15 +18,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🔨 Build APK in Android Directory
+      - name: 🔍 Find and Build APK
         run: |
-          cd android
-          chmod +x gradlew || true
+          # البحث عن مكان ملف gradlew في المشروع والانتقال إلى مجلده تلقائياً
+          GRADLEW_PATH=$(find . -name "gradlew" -not -path "*/.*" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: gradlew not found!"
+            exit 1
+          fi
+          
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          echo "Found project directory at: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SovereignCRM-APK
-          path: android/build/outputs/apk/debug/*.apk
+          path: '**/build/outputs/apk/debug/*.apk'
           retention-days: 7
