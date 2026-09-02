@@ -1,51 +1,44 @@
-name: 🤖 Sovereign CRM — Ultimate Auto-Fix & Build
+name: Android CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: ☕ Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: 🤖 Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          log-accepted-android-sdk-licenses: true
-
-      - name: 🛠️ Fix Repositories and Build APK
-        run: |
-          cd android/app || cd android || cd .
-          
-          # التأكد من وجود ملف إعدادات المجلد الرئيسي وإضافة مستودعات غوغل إليه إن لم تكن موجودة
-          SETTINGS_FILE="../../settings.gradle"
-          if [ -f "$SETTINGS_FILE" ]; then
-            echo "Checking settings.gradle..."
-          fi
-          
-          # إنشاء gradlew وتعديل الأذونات
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.5
-          fi
-          
+    - name: Grant execute permission for gradlew
+      run: |
+        if [ -f "android/gradlew" ]; then
+          chmod +x android/gradlew
+        elif [ -f "gradlew" ]; then
           chmod +x gradlew
-          
-          echo "🚀 Running Gradle Build..."
-          ./gradlew assembleDebug --no-daemon --stacktrace
+        fi
 
-      - name: 📤 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SovereignCRM-Android-APK
-          path: '**/build/outputs/apk/debug/*.apk'
-          retention-days: 7
+    - name: Build with Gradle
+      run: |
+        if [ -d "android" ]; then
+          cd android
+          ./gradlew assembleDebug --no-daemon
+        else
+          ./gradlew assembleDebug --no-daemon
+        fi
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: '**/build/outputs/apk/debug/*.apk'
+        retention-days: 7
