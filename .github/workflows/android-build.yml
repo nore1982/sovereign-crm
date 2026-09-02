@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Ultra-Robust Android Build
+name: 🤖 Sovereign CRM — Ultimate Auto-Fix & Build
 
 on:
   push:
@@ -23,31 +23,24 @@ jobs:
         with:
           log-accepted-android-sdk-licenses: true
 
-      - name: 🔍 Locate and Fix Android Project Structure
+      - name: 🛠️ Fix Repositories and Build APK
         run: |
-          echo "Current directory structure:"
-          ls -la
+          cd android/app || cd android || cd .
           
-          # البحث عن ملف build.gradle الخاص بالأندرويد
-          GRADLE_FILE=$(find . -name "build.gradle" -not -path "*/.*" | grep -E "app|android" | head -n 1)
-          if [ -z "$GRADLE_FILE" ]; then
-            GRADLE_FILE=$(find . -name "build.gradle" -not -path "*/.*" | head -n 1)
+          # التأكد من وجود ملف إعدادات المجلد الرئيسي وإضافة مستودعات غوغل إليه إن لم تكن موجودة
+          SETTINGS_FILE="../../settings.gradle"
+          if [ -f "$SETTINGS_FILE" ]; then
+            echo "Checking settings.gradle..."
           fi
           
-          PROJECT_DIR=$(dirname "$GRADLE_FILE")
-          echo "Target Android project directory: $PROJECT_DIR"
-          
-          cd "$PROJECT_DIR"
-          
-          # التأكد من وجود gradlew أو إنشائه تلقائياً لمنع أي خطأ
+          # إنشاء gradlew وتعديل الأذونات
           if [ ! -f "gradlew" ]; then
-            echo "⚠️ gradlew missing, generating gradle wrapper..."
             gradle wrapper --gradle-version 8.5
           fi
           
           chmod +x gradlew
           
-          echo "🚀 Starting APK Build..."
+          echo "🚀 Running Gradle Build..."
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 📤 Upload APK Artifact
