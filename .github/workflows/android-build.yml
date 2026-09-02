@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Direct Gradle Build
+name: 🤖 Sovereign CRM — Ultra-Robust Android Build
 
 on:
   push:
@@ -18,24 +18,41 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🔨 Build with Gradle
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          log-accepted-android-sdk-licenses: true
+
+      - name: 🔍 Locate and Fix Android Project Structure
         run: |
-          # البحث عن المجلد الذي يحتوي على ملف build.gradle الخاص بالأندرويد والانتقال إليه
-          BUILD_FILE=$(find . -name "build.gradle" -not -path "*/.*" | grep -E "android|app" | head -n 1)
-          if [ -z "$BUILD_FILE" ]; then
-            BUILD_FILE=$(find . -name "build.gradle" -not -path "*/.*" | head -n 1)
+          echo "Current directory structure:"
+          ls -la
+          
+          # البحث عن ملف build.gradle الخاص بالأندرويد
+          GRADLE_FILE=$(find . -name "build.gradle" -not -path "*/.*" | grep -E "app|android" | head -n 1)
+          if [ -z "$GRADLE_FILE" ]; then
+            GRADLE_FILE=$(find . -name "build.gradle" -not -path "*/.*" | head -n 1)
           fi
           
-          PROJECT_DIR=$(dirname "$BUILD_FILE")
-          echo "Building in directory: $PROJECT_DIR"
+          PROJECT_DIR=$(dirname "$GRADLE_FILE")
+          echo "Target Android project directory: $PROJECT_DIR"
+          
           cd "$PROJECT_DIR"
           
-          # استخدام gradle العام مباشرة
-          gradle assembleDebug --no-daemon
+          # التأكد من وجود gradlew أو إنشائه تلقائياً لمنع أي خطأ
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️ gradlew missing, generating gradle wrapper..."
+            gradle wrapper --gradle-version 8.5
+          fi
+          
+          chmod +x gradlew
+          
+          echo "🚀 Starting APK Build..."
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: 📤 Upload APK
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SovereignCRM-APK
+          name: SovereignCRM-Android-APK
           path: '**/build/outputs/apk/debug/*.apk'
           retention-days: 7
