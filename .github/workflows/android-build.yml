@@ -1,51 +1,49 @@
-name: 🤖 Sovereign CRM — Clean Production Android Build
+name: Android Build (Flutter)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: 📥 Checkout Repository
-      uses: actions/checkout@v4
+      # ─── 1. Checkout الكود ───
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: ☕ Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      # ─── 2. إعداد Flutter ───
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
 
-    - name: 🔍 Find Project and Grant Permission
-      run: |
-        echo "Searching for build files..."
-        if [ -f "android/gradlew" ]; then
-          chmod +x android/gradlew
-          echo "Found gradlew inside android directory."
-        elif [ -f "gradlew" ]; then
+      # ─── 3. تثبيت Dependencies ───
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ─── 4. التأكد من وجود gradlew وإنشاؤه إذا لزم الأمر ───
+      - name: Ensure Gradle wrapper exists
+        working-directory: ./android
+        run: |
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️  gradlew not found. Generating..."
+            flutter build apk --debug || true
+          fi
           chmod +x gradlew
-          echo "Found gradlew in root directory."
-        else
-          echo "Generating Gradle wrapper..."
-          gradle wrapper --gradle-version 8.5
-          chmod +x gradlew
-        fi
 
-    - name: 🔨 Build APK with Gradle
-      run: |
-        if [ -d "android" ]; then
-          cd android
-          ./gradlew assembleDebug --no-daemon
-        else
-          ./gradlew assembleDebug --no-daemon
-        fi
+      # ─── 5. بناء APK ───
+      - name: Build APK
+        working-directory: ./android
+        run: ./gradlew assembleRelease
 
-    - name: 📤 Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SovereignCRM-APK-Clean
-        path: '**/build/outputs/apk/debug/*.apk'
-        retention-days: 7
+      # ─── 6. رفع الـ Artifact ───
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
