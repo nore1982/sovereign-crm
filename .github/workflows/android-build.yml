@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Ultra-Robust Auto Build
+name: 🤖 Sovereign CRM — Ultimate Self-Healing Build
 
 on:
   push:
@@ -24,23 +24,27 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: 🛠️ Smart Auto-Wrapper and Build
+    - name: 🛠️ Auto-Generate Gradle Environment and Build APK
       run: |
-        echo "=== Listing Repository Files ==="
-        find . -maxdepth 3 -not -path '*/.*'
+        echo "=== 1. Checking Repository Structure ==="
+        ls -la
         
-        # البحث الذكي عن مسار البناء أو إنشاء wrapper جديد تلقائياً
+        # البحث الذكي عن مسار الأندرويد أو إنشاء البيئة فوراً
         if [ -f "gradlew" ]; then
-          echo "Found gradlew in root"
+          echo "Found gradlew in root."
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
         elif [ -f "android/gradlew" ]; then
-          echo "Found gradlew in android/"
+          echo "Found gradlew inside android directory."
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
         else
-          echo "⚠️ No gradlew found. Initializing Gradle Wrapper..."
+          echo "⚠️ Gradle wrapper missing. Generating fresh wrapper dynamically..."
+          # إذا وجدنا مجلد android ندخله، وإلا سننشئ الإعدادات في الجذر
+          if [ -d "android" ]; then
+            cd android
+          fi
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
@@ -49,6 +53,6 @@ jobs:
     - name: 📤 Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SovereignCRM-APK-Debug
+        name: SovereignCRM-Debug-APK
         path: '**/build/outputs/apk/debug/*.apk'
         retention-days: 7
