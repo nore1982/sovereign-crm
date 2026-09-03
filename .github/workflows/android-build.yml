@@ -29,7 +29,7 @@ jobs:
         echo "=== Listing Repository Files ==="
         find . -maxdepth 3 -not -path '*/.*'
         
-        # البحث عما إذا كان هناك أي مجلد أندرويد أو ملفات جراتل
+        # البحث الذكي عن مسار البناء أو إنشاء wrapper جديد تلقائياً
         if [ -f "gradlew" ]; then
           echo "Found gradlew in root"
           chmod +x gradlew
@@ -40,7 +40,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
         else
-          echo "⚠️ No gradlew found anywhere. Initializing Gradle Wrapper..."
+          echo "⚠️ No gradlew found. Initializing Gradle Wrapper..."
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
