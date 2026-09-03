@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Final Smart Build
+name: 🤖 Sovereign CRM — Ultimate Flutter Build
 
 on:
   push:
@@ -19,32 +19,35 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: 🐦 Set up Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.x' # أو اتركها للإصدار الافتراضي المستقر
+        channel: 'stable'
+        cache: true
+
     - name: 🤖 Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: 🛠️ Generate Gradle Wrapper and Build APK
+    - name: 🛠️ Configure local.properties and Build APK
       run: |
-        echo "=== 1. Checking Android Directory ==="
+        echo "=== 1. Writing local.properties paths ==="
         cd android
         
-        # إنشاء ملف local.properties لمنع خطأ غيابه
+        # كتابة مسار الأندرويد ومسار فلاتر معاً لمنع أي خطأ نهائياً
         echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+        echo "flutter.sdk=$FLUTTER_ROOT" >> local.properties
         
-        # التأكد من وجود gradlew أو توليده سحابياً فوراً إذا كان مفقوداً
-        if [ ! -f "gradlew" ]; then
-          echo "⚠️ gradlew is missing! Generating fresh Gradle wrapper..."
-          gradle wrapper --gradle-version 8.5
-        else
-          echo "✅ gradlew found."
-        fi
+        cat local.properties
         
-        # إعطاء صلاحيات التشغيل
+        # التأكد من صلاحيات gradlew والتشغيل
         chmod +x gradlew
         
-        echo "=== 2. Starting Gradle Build ==="
-        ./gradlew assembleDebug --no-daemon
+        echo "=== 2. Starting Flutter Build APK ==="
+        cd ..
+        flutter build apk --debug --no-pub
 
     - name: 📤 Upload APK Artifact
       uses: actions/upload-artifact@v4
