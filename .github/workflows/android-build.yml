@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Ultimate Self-Healing Build
+name: 🤖 Sovereign CRM — Ultimate Build
 
 on:
   push:
@@ -24,31 +24,16 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: 🛠️ Auto-Generate Gradle Environment and Build APK
+    - name: 🛠️ Fix local.properties and Build APK
       run: |
-        echo "=== 1. Checking Repository Structure ==="
-        ls -la
+        # إنشاء ملف local.properties في مجلد android لمنع خطأ الفشل
+        echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+        echo "Created local.properties successfully."
         
-        # البحث الذكي عن مسار الأندرويد أو إنشاء البيئة فوراً
-        if [ -f "gradlew" ]; then
-          echo "Found gradlew in root."
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-        elif [ -f "android/gradlew" ]; then
-          echo "Found gradlew inside android directory."
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-        else
-          echo "⚠️ Gradle wrapper missing. Generating fresh wrapper dynamically..."
-          # إذا وجدنا مجلد android ندخله، وإلا سننشئ الإعدادات في الجذر
-          if [ -d "android" ]; then
-            cd android
-          fi
-          gradle wrapper --gradle-version 8.5
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-        fi
+        # الانتقال لمجلد android وبناء ملف الـ APK
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
 
     - name: 📤 Upload APK Artifact
       uses: actions/upload-artifact@v4
