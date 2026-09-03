@@ -24,15 +24,17 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: 🛠️ Fix local.properties and Build APK
+    - name: 🛠️ Create local.properties and Build APK
       run: |
-        # إنشاء ملف local.properties في مجلد android لمنع خطأ الفشل
+        # التأكد من إنشاء ملف local.properties في مجلد android
         echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
-        echo "Created local.properties successfully."
+        echo "=== local.properties created successfully ==="
         
-        # الانتقال لمجلد android وبناء ملف الـ APK
+        # إعطاء صلاحيات التشغيل لملف gradlew باستخدام مساره المباشر
+        chmod +x android/gradlew
+        
+        # بناء ملف الـ APK مباشرة من المسار الرئيسي مع تحديد مجلد العمل
         cd android
-        chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
 
     - name: 📤 Upload APK Artifact
