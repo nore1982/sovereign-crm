@@ -1,4 +1,4 @@
-name: 🤖 Sovereign CRM — Ultimate Build
+name: 🤖 Sovereign CRM — Final Smart Build
 
 on:
   push:
@@ -24,17 +24,26 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: 🛠️ Create local.properties and Build APK
+    - name: 🛠️ Generate Gradle Wrapper and Build APK
       run: |
-        # التأكد من إنشاء ملف local.properties في مجلد android
-        echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
-        echo "=== local.properties created successfully ==="
-        
-        # إعطاء صلاحيات التشغيل لملف gradlew باستخدام مساره المباشر
-        chmod +x android/gradlew
-        
-        # بناء ملف الـ APK مباشرة من المسار الرئيسي مع تحديد مجلد العمل
+        echo "=== 1. Checking Android Directory ==="
         cd android
+        
+        # إنشاء ملف local.properties لمنع خطأ غيابه
+        echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+        
+        # التأكد من وجود gradlew أو توليده سحابياً فوراً إذا كان مفقوداً
+        if [ ! -f "gradlew" ]; then
+          echo "⚠️ gradlew is missing! Generating fresh Gradle wrapper..."
+          gradle wrapper --gradle-version 8.5
+        else
+          echo "✅ gradlew found."
+        fi
+        
+        # إعطاء صلاحيات التشغيل
+        chmod +x gradlew
+        
+        echo "=== 2. Starting Gradle Build ==="
         ./gradlew assembleDebug --no-daemon
 
     - name: 📤 Upload APK Artifact
